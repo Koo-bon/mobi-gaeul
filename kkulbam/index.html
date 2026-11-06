@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>꿀밤 때리기</title>
+<style>
+  @font-face { font-family: Galmuri; font-weight: 400; font-display: swap;
+    src: url('../fonts/Galmuri11.woff2') format('woff2'); }
+  @font-face { font-family: Galmuri; font-weight: 700; font-display: swap;
+    src: url('../fonts/Galmuri11-Bold.woff2') format('woff2'); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: #1b1430;
+    color: #fff7ec;
+    font-family: Galmuri, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", monospace;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-user-select: none; user-select: none;
+    -webkit-text-size-adjust: 100%; overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  #stage { position: relative; width: min(100vw, 100vh * 0.75); max-width: 440px; }
+  canvas {
+    display: block; width: 100%; height: auto;
+    image-rendering: pixelated;
+    border: 4px solid #0d0a1a;
+    box-shadow: 0 10px 0 rgba(0,0,0,.45);
+    cursor: pointer;
+  }
+
+  .panel {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 24px; text-align: center;
+    background: rgba(27, 20, 48, .92);
+  }
+  .panel[hidden] { display: none; }
+
+  h1 { font-size: clamp(22px, 7vw, 34px); font-weight: 700; letter-spacing: 1px; }
+  .sub { font-size: clamp(11px, 3.4vw, 14px); line-height: 1.7; color: #c3b6e6; }
+
+  input {
+    width: 100%; max-width: 280px; padding: 12px 14px;
+    font: inherit; font-size: clamp(14px, 4.4vw, 18px); text-align: center;
+    color: #1b1430; background: #fff7ec;
+    border: 4px solid #0d0a1a; outline: none;
+  }
+  input:focus { background: #ffe9c9; }
+
+  button {
+    padding: 12px 26px; font: inherit; font-size: clamp(14px, 4.4vw, 18px); font-weight: 700;
+    color: #1b1430; background: #ffcf4d;
+    border: 4px solid #0d0a1a; box-shadow: 0 5px 0 #0d0a1a;
+    cursor: pointer;
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 #0d0a1a; }
+  button.ghost { background: #c3b6e6; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  .score { font-size: clamp(30px, 10vw, 46px); font-weight: 700; color: #ffcf4d; }
+  .lines { font-size: clamp(12px, 3.6vw, 15px); line-height: 1.9; }
+  .err { font-size: 12px; color: #ff8a8a; min-height: 16px; }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="cv" width="360" height="480"></canvas>
+
+    <div class="panel" id="intro">
+      <h1>꿀밤 때리기</h1>
+      <p class="sub">요즘 속 썩이는 브랜드 이름을 적으세요.<br>10초 동안 실컷 때리시면 됩니다.</p>
+      <input id="name" maxlength="12" placeholder="브랜드 이름" autocomplete="off" spellcheck="false">
+      <p class="err" id="err"></p>
+      <button id="start">꿀밤 시작</button>
+    </div>
+
+    <div class="panel" id="result" hidden>
+      <p class="sub" id="r-title"></p>
+      <p class="score" id="r-score"></p>
+      <p class="lines" id="r-lines"></p>
+      <p class="sub" id="r-grade"></p>
+      <div class="row">
+        <button id="again">한 판 더</button>
+        <button id="other" class="ghost">다른 브랜드</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
