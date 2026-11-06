@@ -20,6 +20,7 @@ let finger = 1;               // 0 = 내리치는 순간, 1 = 손 올라간 상�
 let bumps = [];               // 머리에 쌓이는 혹
 let stars = [];               // 튀는 별
 let pops = [];                // 떠오르는 글자
+let bubble = null;            // 브랜드 말대꾸 말풍선
 let last = 0;
 
 /* ---------------- 소리: 파일 없이 합성한다 ---------------- */
@@ -50,7 +51,26 @@ function thwack(combo) {
 /* ---------------- 한 대 때리기 ---------------- */
 const SHOUTS = ['딱!', '퍽!', '꿀밤!', '아야!', '으악!', '커헉!'];
 
+// 맞으면서도 할 말은 다 하는 브랜드
+const TAUNTS = [
+  '한 번만 더 수정해주세요', '컨펌은 아직이요', '톤앤매너가 좀...',
+  '시안 3개만 더 주세요', '느낌적인 느낌으로 부탁', '예산은 그대로예요',
+  '내일 오전까지 가능하죠?', '위에서 엎었어요', '처음 거가 나았던 것 같아요',
+  '좀 더 힙하게 가죠', '심플한데 꽉 차 보이게', '저희 대표님 취향이...',
+  '레퍼런스 좀 찾아주세요', '이건 서비스로 되죠?', '금요일 저녁에 미안한데요',
+  '캐주얼한데 고급스럽게', '로고 조금만 크게요', '아까 그걸로 돌려주세요',
+];
+// 격노 모드에서는 태도가 달라진다
+const BEGS = [
+  '잘못했습니다', '컨펌 지금 드릴게요', '수정 없이 갈게요',
+  '예산 올려드릴게요', '주말엔 연락 안 할게요', '첫 시안이 최고였어요',
+  '사람 살려', '야근비 드릴게요',
+];
+const pick = (a) => a[(Math.random() * a.length) | 0];
+const say = (list, now, ms = 1900) => { bubble = { text: pick(list), until: now + ms }; };
+
 function strike(now) {
+  const wasRaging = isRaging(state, now);
   state = hit(state, now);
   squash = 1;
   finger = 0;
@@ -70,6 +90,10 @@ function strike(now) {
     big: state.combo >= 3,
   });
   thwack(state.combo);
+
+  // 격노가 막 켜졌으면 바로 빌고, 아니면 몇 대에 한 번씩 말대꾸한다
+  if (!wasRaging && isRaging(state, now)) say(BEGS, now, 2400);
+  else if (state.hits % 6 === 0) say(isRaging(state, now) ? BEGS : TAUNTS, now);
 }
 
 /* ---------------- 그리기 도우미 ---------------- */
@@ -208,6 +232,43 @@ function drawEffects(dt) {
   pops = pops.filter((p) => p.life > 0);
 }
 
+/* ---------------- 말풍선 ---------------- */
+function wrap(str, size, maxW) {
+  ctx.font = `700 ${size}px Galmuri, monospace`;
+  const words = str.split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const t = line ? `${line} ${w}` : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+    else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawBubble(now, raging) {
+  if (!bubble || now > bubble.until) { bubble = null; return; }
+  const size = 14, pad = 11, maxW = W - 70;
+  const lines = wrap(bubble.text, size, maxW);
+  const tw = Math.max(...lines.map((l) => ctx.measureText(l).width));
+  const bw = tw + pad * 2, bh = lines.length * 19 + pad * 2 - 3;
+  const bx = Math.round(HEAD_X - bw / 2), by = 92 - bh / 2;
+
+  // 남은 시간이 얼마 없으면 서서히 사라진다
+  ctx.globalAlpha = Math.min(1, (bubble.until - now) / 320);
+  px(bx, by, bw, bh, '#fff7ec');
+  ctx.strokeStyle = '#0d0a1a'; ctx.lineWidth = 3;
+  ctx.strokeRect(bx, by, bw, bh);
+  // 꼬리 (머리 쪽을 향해 계단식으로)
+  for (let i = 0; i < 4; i++) {
+    px(HEAD_X - 14 + i * 4, by + bh - 2 + i * 5, 14 - i * 3, 6, '#fff7ec');
+    px(HEAD_X - 14 + i * 4, by + bh + 1 + i * 5, 3, 6, '#0d0a1a');
+  }
+  lines.forEach((l, i) => text(l, HEAD_X, by + pad + 8 + i * 19, size, raging ? '#c02b4d' : '#1b1430'));
+  ctx.globalAlpha = 1;
+}
+
 /* ---------------- HUD ---------------- */
 function drawHud(now, raging) {
   const left = Math.max(0, GAME_MS - (now - startedAt));
@@ -248,6 +309,7 @@ function frame(now) {
   drawVictim(now, raging);
   if (phase === 'play') drawHand();
   drawEffects(dt);
+  if (phase === 'play') drawBubble(now, raging);
   ctx.restore();
 
   if (raging) { ctx.fillStyle = 'rgba(255,60,80,.14)'; ctx.fillRect(0, 0, W, H); }
@@ -264,7 +326,7 @@ function begin() {
   $('err').textContent = '';
   brand = v;
   state = newState();
-  bumps = []; stars = []; pops = [];
+  bumps = []; stars = []; pops = []; bubble = null;
   startedAt = performance.now();
   phase = 'play';
   intro.hidden = true; result.hidden = true;
@@ -290,6 +352,6 @@ $('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') begin(); }
 $('again').addEventListener('click', begin);
 $('other').addEventListener('click', () => {
   result.hidden = true; intro.hidden = false; phase = 'intro';
-  bumps = []; stars = []; pops = []; state = newState();
+  bumps = []; stars = []; pops = []; bubble = null; state = newState();
   $('name').select();
 });
