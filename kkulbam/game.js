@@ -1,4 +1,4 @@
-import { newState, hit, decay, isRaging, grade, angerPercent, GAME_MS } from './logic.js';
+import { newState, hit, decay, isRaging, grade, angerPercent, GAME_MS } from './logic.js?v=2';
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
